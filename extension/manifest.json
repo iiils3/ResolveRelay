@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "ResolveRelay Product Fingerprint",
+  "version": "0.1.0",
+  "description": "Capture a product page fingerprint and send it to ResolveRelay before a dispute happens.",
+  "permissions": ["activeTab", "tabs"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Save product fingerprint"
+  }
+}
