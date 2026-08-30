@@ -2,13 +2,19 @@
 
 ResolveRelay turns a post-purchase problem into a structured claim between a consumer and a merchant, with durable account-backed claims, evidence, secure merchant invitations, realtime updates, human-approved actions, optional AI assistance, merchant-support discovery, and WebMCP tools.
 
-> Repository note: this repository still has the historical GitHub name `ClaimGuard`. The product name is **ResolveRelay**. The source has been synchronized from the current ResolveRelay recovery deployment before migration away from AppDeploy.
+## Deployment
 
-## Current live recovery build
+The repository is now named **`iiils3/ResolveRelay`** and is the source of truth for the project.
 
-https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/
+The application has been migrated away from AppDeploy for its active runtime path and is prepared for Netlify:
 
-The next deployment target is Netlify. Supabase remains the persistent authentication/database/storage backend.
+- Vite frontend builds to `dist/`
+- Netlify Functions live under `netlify/functions/`
+- `netlify.toml` contains the build and functions configuration
+- AI routes read `OPENAI_API_KEY` only from Netlify environment variables
+- Supabase remains the persistent authentication/database/storage backend
+
+Historical AppDeploy backend source under `backend/` is retained only as migration history and is not the intended Netlify runtime.
 
 ## Account model
 
@@ -48,24 +54,24 @@ State-changing WebMCP tools require explicit human confirmation and still pass t
 ## Architecture
 
 - React + TypeScript + Vite
+- Netlify hosting + Netlify Functions
 - Supabase Auth / PostgreSQL / Storage / Realtime / Edge Functions
-- AppDeploy backend AI routes in the current recovery build
+- OpenAI API for optional claim assistance
 - WebMCP browser tools
 - Chrome extension MVP under `extension/`
 
-The AppDeploy-specific AI/API layer under `backend/` is preserved here as source history. It must be adapted to a Netlify-compatible serverless layer before the AppDeploy dependency is removed from production.
+## Repository coverage
 
-## Repository backup coverage
-
-The repository now contains:
+The repository contains:
 
 - current frontend application source
 - current responsive UI styles
-- current AppDeploy backend AI/API source
+- Netlify serverless API layer
 - Chrome extension MVP
-- current authentication/persistence test suite
-- current ResolveRelay Supabase Edge Functions
-- the complete ResolveRelay-specific Supabase migration chain from initial schema through the latest role and anonymous-access hardening
+- authentication/persistence tests
+- ResolveRelay Supabase Edge Functions
+- the ResolveRelay Supabase migration chain from initial schema through role and anonymous-access hardening
+- historical pre-Netlify backend source for reference
 
 The hosted Supabase project remains the source of truth for existing production data; data rows and secrets are intentionally not committed to GitHub.
 
@@ -78,6 +84,7 @@ The hosted Supabase project remains the source of truth for existing production 
 - separate consumer and merchant identities
 - hashed, expiring, revocable merchant invitation tokens
 - human confirmation for state-changing agent actions
+- provider API keys stored only as server-side environment variables
 
 ResolveRelay is not a law firm and does not provide legal advice.
 
@@ -88,7 +95,27 @@ npm install
 npm run dev
 ```
 
-The current source connects to the existing ResolveRelay Supabase backend with a browser-safe Supabase publishable key. Never commit service-role keys, provider API keys, database passwords, or other backend secrets.
+Production build:
+
+```bash
+npm run build
+```
+
+The browser uses the existing ResolveRelay Supabase project through a browser-safe publishable key. Never commit service-role keys, OpenAI API keys, database passwords, or other backend secrets.
+
+## Netlify environment
+
+Required for AI features:
+
+```text
+OPENAI_API_KEY=<server-side secret>
+```
+
+Optional:
+
+```text
+OPENAI_MODEL=gpt-5-mini
+```
 
 ## License
 
