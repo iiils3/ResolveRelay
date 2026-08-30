@@ -1,6 +1,0 @@
-{
-  "name": "@appdeploy/client",
-  "version": "0.0.0-netlify-shim",
-  "type": "module",
-  "exports": "./index.js"
-}
