@@ -29,7 +29,6 @@ jobs:
           echo "$body" | grep -q '"ok":true'
       - name: Check live AI route
         if: github.event_name == 'push'
-        continue-on-error: true
         run: |
           set -euo pipefail
           response_file="$(mktemp)"
@@ -40,8 +39,3 @@ jobs:
           cat "$response_file"
           test "$status" = "200"
           grep -q '"text"' "$response_file"
-      - name: Temporary sanitized AI diagnostic
-        if: github.event_name == 'push'
-        run: |
-          set -euo pipefail
-          curl -fsS --retry 2 --retry-delay 4 https://resolverelay.netlify.app/internal/ai-diagnostic
