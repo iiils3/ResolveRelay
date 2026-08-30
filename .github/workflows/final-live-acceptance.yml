@@ -73,6 +73,7 @@ jobs:
           await page.getByRole('button',{name:'Enter as consumer'}).click();
           await page.waitForURL(/#\/dashboard/,{timeout:20000});
           await page.getByText('Demo Consumer',{exact:true}).waitFor();
+          await page.locator('.caseTile').first().waitFor({timeout:15000});
           assert(await page.locator('.caseTile').count()>=3,'Consumer demo claims missing');
           await page.locator('.caseTile').first().click();
           await page.waitForURL(/#\/claim\//,{timeout:10000});
@@ -92,6 +93,7 @@ jobs:
           await page.getByRole('button',{name:'Enter as merchant'}).click();
           await page.waitForURL(/#\/dashboard/,{timeout:20000});
           await page.getByText('Demo Merchant',{exact:true}).waitFor();
+          await page.locator('.caseTile').first().waitFor({timeout:15000});
           assert(await page.locator('.caseTile').count()>=3,'Merchant assigned claims missing');
           const mobile=await browser.newPage({viewport:{width:390,height:844}});
           await mobile.addInitScript(()=>localStorage.setItem('rr-lang','en'));
