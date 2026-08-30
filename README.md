@@ -8,12 +8,12 @@ The repository **`iiils3/ResolveRelay`** is the source of truth for the project.
 
 Production is deployed from the `main` branch to Netlify:
 
-https://resolverelay.netlify.app
+https://resolverelai.netlify.app
 
 - Vite frontend builds to `dist/`
 - Netlify Functions live under `netlify/functions/`
 - `netlify.toml` contains the build and functions configuration
-- AI routes read `OPENAI_API_KEY` only from Netlify environment variables
+- AI uses `GROQ_API_KEY` as the primary provider secret and can fall back to OpenAI when configured
 - Supabase remains the persistent authentication/database/storage backend
 
 Historical AppDeploy backend source under `backend/` is retained only as migration history and is not part of the active Netlify runtime path.
@@ -58,7 +58,8 @@ State-changing WebMCP tools require explicit human confirmation and still pass t
 - React + TypeScript + Vite
 - Netlify hosting + Netlify Functions
 - Supabase Auth / PostgreSQL / Storage / Realtime / Edge Functions
-- OpenAI API for optional claim assistance
+- Groq API for primary optional claim assistance
+- OpenAI API as an optional fallback provider
 - WebMCP browser tools
 - Chrome extension MVP under `extension/`
 
@@ -103,19 +104,26 @@ Production build:
 npm run build
 ```
 
-The browser uses the existing ResolveRelay Supabase project through a browser-safe publishable key. Never commit service-role keys, OpenAI API keys, database passwords, or other backend secrets.
+The browser uses the existing ResolveRelay Supabase project through a browser-safe publishable key. Never commit service-role keys, Groq/OpenAI API keys, database passwords, or other backend secrets.
 
 ## Netlify environment
 
-Required for AI features:
+Primary AI provider:
+
+```text
+GROQ_API_KEY=<server-side secret>
+```
+
+Optional Groq model override:
+
+```text
+GROQ_MODEL=openai/gpt-oss-120b
+```
+
+Optional OpenAI fallback:
 
 ```text
 OPENAI_API_KEY=<server-side secret>
-```
-
-Optional:
-
-```text
 OPENAI_MODEL=gpt-5.6-luna
 ```
 
