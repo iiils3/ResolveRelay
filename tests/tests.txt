@@ -1,0 +1,58 @@
+# Tests
+
+## Test 1 - Consumer account keeps a claim after sign-out [sanity]
+Viewport: mobile (375x667)
+Covers: persistent consumer registration, password sign-in, claim creation, database persistence, session restoration
+Description: Verifies the former anonymous demo path is replaced by a real account whose claim remains available after leaving the session.
+Steps:
+1. Create a Consumer account with a fresh valid test email and password, then create a claim with merchant, order, product, amount, purchase date, description, and requested resolution.
+2. Sign out, then sign back in with the same email and password.
+3. Open Dashboard and the previously created claim.
+Expected: The account is labeled Consumer account, the claim still appears after sign-out/sign-in, and its stored purchase details remain visible.
+
+## Test 2 - Merchant registration exposes only merchant workflow
+Viewport: desktop (1280x800)
+Covers: persistent merchant registration, role-aware navigation, merchant dashboard, consumer workflow isolation
+Description: Verifies a merchant account is visibly distinct and cannot create consumer claims or product fingerprints.
+Steps:
+1. Create a Merchant account with a fresh valid test email and password.
+2. Inspect the sidebar and dashboard.
+3. Refresh the page.
+Expected: The sidebar identifies Merchant account, New claim and Product fingerprints are absent, and the merchant dashboard remains available after refresh.
+
+## Test 3 - One email cannot be registered under both roles
+Viewport: mobile (375x667)
+Covers: duplicate-email guardrail, immutable account role, test registration endpoint
+Description: Verifies an email already used for one role cannot be reused to create the opposite role.
+Setup:
+1. Create a Consumer account with a fresh test email and password, then sign out.
+Steps:
+1. Open Create account and select Merchant.
+2. Enter the same email with any valid password and submit.
+3. Sign in using the original consumer credentials.
+Expected: Merchant registration is rejected with a visible existing-email message, and the original account still appears as Consumer account.
+
+## Test 4 - Merchant invitation rejects a consumer and survives merchant relogin
+Viewport: desktop (1280x800)
+Covers: merchant invitation role boundary, redeem-invite authorization, merchant case membership, durable merchant dashboard assignment
+Description: Verifies invitations cannot convert consumers into merchants and accepted assignments persist for the merchant account.
+Setup:
+1. Actor A creates a Consumer account, creates a claim, generates its merchant invitation, and copies the invitation link.
+2. Actor B creates a separate Merchant account and signs out.
+Steps:
+1. While signed in as Actor A Consumer, open the merchant invitation and attempt to proceed.
+2. Use the invitation flow to sign out and sign in as Actor B Merchant, then accept the claim.
+3. Sign Actor B out and back in, then open the merchant dashboard.
+Expected: Actor A is not converted to merchant, Actor B can accept the invitation, and the assigned claim remains listed after Actor B signs out and back in.
+
+## Test 5 - Existing claim assistance remains available to a persistent consumer
+Viewport: desktop (1280x800)
+Covers: persistent claim access, /api/claim-assist, /api/claim-package, merchant support discovery
+Description: Verifies the authentication change does not remove the established claim-preparation tools.
+Setup:
+1. Sign in to a Consumer account with an existing claim that includes a product URL.
+Steps:
+1. Open the claim and request a neutral AI summary.
+2. Prepare a merchant message.
+3. Run merchant support discovery from the saved product URL.
+Expected: The saved claim loads from the account and the AI/support tools return visible results without requiring a demo session.
