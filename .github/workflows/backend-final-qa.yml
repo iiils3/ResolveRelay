@@ -1,0 +1,22 @@
+name: Final Live Backend QA
+
+on:
+  push:
+    branches: [hackathon-final]
+    paths:
+      - '.github/workflows/backend-final-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run live Supabase consumer-to-merchant E2E
+        run: node scripts/production-e2e.mjs
