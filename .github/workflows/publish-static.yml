@@ -1,0 +1,39 @@
+name: Publish static production build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build production frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Publish immutable site branch
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cp -R dist/. "$tmp/"
+          touch "$tmp/.nojekyll"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --orphan site
+          git rm -rf .
+          cp -R "$tmp"/. .
+          git add -A
+          git commit -m "Publish ResolveRelay static build ${GITHUB_SHA::7}"
+          git push --force origin site
