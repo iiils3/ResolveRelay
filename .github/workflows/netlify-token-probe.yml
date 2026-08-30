@@ -1,0 +1,21 @@
+name: Netlify Credential Probe
+
+on:
+  push:
+    branches: [hackathon-final]
+    paths:
+      - '.github/workflows/netlify-token-probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deploy credential presence without exposing it
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -n "$NETLIFY_AUTH_TOKEN" ]; then
+            echo 'NETLIFY_TOKEN_PRESENT=true'
+          else
+            echo 'NETLIFY_TOKEN_PRESENT=false'
+          fi
