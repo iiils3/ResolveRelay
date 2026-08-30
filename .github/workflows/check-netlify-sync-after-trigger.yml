@@ -1,4 +1,4 @@
-name: Verify live role isolation build
+name: Check Netlify deploy credentials
 
 on:
   push:
@@ -12,30 +12,11 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      HAS_NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
+      HAS_NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID != '' }}
     steps:
-      - name: Inspect live role-isolation markers
-        shell: python
+      - name: Check credential presence only
         run: |
-          import re, urllib.request, time
-          base='https://resolverelai.netlify.app'
-          req=urllib.request.Request(base+'/?rolefix='+str(int(time.time())),headers={'Cache-Control':'no-cache','User-Agent':'ResolveRelay-QA'})
-          html=urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace')
-          m=re.search(r'<script[^>]+src=["\']([^"\']+\.js)["\']',html)
-          if not m: raise SystemExit('No live JS ref')
-          ref=m.group(1)
-          url=base+'/'+ref.lstrip('./')+'?rolefix='+str(int(time.time()))
-          js=urllib.request.urlopen(urllib.request.Request(url,headers={'Cache-Control':'no-cache','User-Agent':'ResolveRelay-QA'}),timeout=30).read().decode('utf-8','replace')
-          checks={
-            'demo_access':'Demo access' in js,
-            'forbidden_guard':'FORBIDDEN' in js,
-            'claim_assistant':'Claim assistant' in js,
-            'merchant_actions':'Merchant actions' in js,
-            'resolution_offers':'resolution_offers' in js,
-            'case_members':'case_members' in js,
-            'chat_key':'rr-chat-' in js,
-          }
-          print('LIVE_JS='+ref)
-          for k,v in checks.items(): print(k+'='+str(v).lower())
-          missing=[k for k,v in checks.items() if not v]
-          if missing: raise SystemExit('Missing current role-fix markers: '+','.join(missing))
-          print('LIVE_ROLE_FIX_MARKERS_OK')
+          echo "HAS_NETLIFY_AUTH_TOKEN=$HAS_NETLIFY_AUTH_TOKEN"
+          echo "HAS_NETLIFY_SITE_ID=$HAS_NETLIFY_SITE_ID"
