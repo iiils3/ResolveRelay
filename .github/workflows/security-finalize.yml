@@ -1,0 +1,57 @@
+name: Security Finalize
+
+on:
+  push:
+    branches: [hackathon-final]
+    paths:
+      - 'scripts/security-finalize.mjs'
+      - '.github/workflows/security-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply security finalization
+        run: node scripts/security-finalize.mjs
+      - name: Remove legacy AppDeploy shim
+        run: |
+          rm -rf shims/appdeploy-client
+          rm -f src/appdeploy-client.d.ts
+      - name: Refresh lockfile
+        run: npm install --package-lock-only --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
+      - name: Validate Netlify function
+        run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-netlify-api.mjs
+      - name: Runtime dependency audit
+        run: |
+          npm audit --omit=dev --json > /tmp/runtime-audit.json || true
+          node - <<'NODE'
+          const a=require('/tmp/runtime-audit.json');
+          const v=a.metadata?.vulnerabilities||{};
+          console.log('runtime-audit',JSON.stringify(v));
+          if((v.critical||0)>0)process.exit(1);
+          NODE
+      - name: Commit security finalization
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A src/App.tsx netlify/functions/api.mts package-lock.json shims src/appdeploy-client.d.ts
+          git commit -m 'Secure auth and AI API surface'
+          git push origin HEAD:hackathon-final
