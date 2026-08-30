@@ -16,10 +16,8 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm run build
-      - name: Validate Netlify backup function
+      - name: Validate Netlify function
         run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-netlify-api.mjs
-      - name: Validate Cloudflare Pages function
-        run: npx esbuild 'functions/api/[[path]].ts' --bundle --platform=browser --format=esm --outfile=/tmp/resolverelay-cloudflare-api.mjs
       - name: Wait for Netlify production deploy
         if: github.event_name == 'push'
         run: sleep 45
