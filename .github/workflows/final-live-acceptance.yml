@@ -57,8 +57,8 @@ jobs:
       - name: Verify live UI on desktop and mobile
         shell: bash
         run: |
-          node <<'NODE'
-          const { chromium } = require('playwright');
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:1440,height:900}});
@@ -75,11 +75,14 @@ jobs:
           await page.getByText('Demo Consumer',{exact:true}).waitFor();
           assert(await page.locator('.caseTile').count()>=3,'Consumer demo claims missing');
           await page.locator('.caseTile').first().click();
-          await page.locator('.passportGrid').waitFor();
+          await page.waitForURL(/#\/claim\//,{timeout:10000});
+          await page.getByText('Transaction Passport',{exact:true}).first().waitFor();
+          const aiResponsePromise=page.waitForResponse(r=>r.url().includes('/functions/v1/ai-relay')&&r.request().method()==='POST',{timeout:30000});
           await page.getByRole('button',{name:'Neutral summary'}).click();
-          await page.locator('.aiQuick').waitFor({timeout:30000});
-          const aiText=await page.locator('.aiQuick').innerText();
-          assert(aiText.length>20&&!/Loading/.test(aiText),'Live AI quick action failed');
+          const aiResponse=await aiResponsePromise;
+          assert(aiResponse.status()===200,`Live AI HTTP ${aiResponse.status()}`);
+          const aiData=await aiResponse.json();
+          assert(typeof aiData?.text==='string'&&aiData.text.trim().length>20,'Live AI quick action returned no usable text');
           await page.goto('https://iiils3.github.io/ResolveRelay/#/dashboard',{waitUntil:'networkidle'});
           await page.getByRole('button',{name:/Sign out/}).click();
           await page.goto('https://iiils3.github.io/ResolveRelay/#/auth',{waitUntil:'networkidle'});
@@ -93,6 +96,7 @@ jobs:
           const mobile=await browser.newPage({viewport:{width:390,height:844}});
           await mobile.addInitScript(()=>localStorage.setItem('rr-lang','en'));
           await mobile.goto('https://iiils3.github.io/ResolveRelay/#/auth',{waitUntil:'networkidle'});
+          await mobile.getByRole('heading',{name:'Demo access'}).waitFor();
           const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
           assert(overflow<=2,`Mobile horizontal overflow: ${overflow}px`);
           const mobileText=await mobile.locator('body').innerText();
