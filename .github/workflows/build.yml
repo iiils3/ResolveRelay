@@ -17,3 +17,25 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run build
       - run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-api.mjs
+      - name: Wait for Netlify production deploy
+        if: github.event_name == 'push'
+        run: sleep 45
+      - name: Check live API health
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS --retry 3 --retry-delay 5 https://resolverelay.netlify.app/api/health)"
+          echo "$body"
+          echo "$body" | grep -q '"ok":true'
+      - name: Check live AI route
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          status="$(curl -sS --retry 2 --retry-delay 4 -o "$response_file" -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"task":"next_step","lang":"en","claim":{"title":"Smoke test claim","description":"Item was not delivered","requested_resolution":"full_refund","status":"prepared"}}' \
+            https://resolverelay.netlify.app/api/claim-assist)"
+          cat "$response_file"
+          test "$status" = "200"
+          grep -q '"text"' "$response_file"
