@@ -70,8 +70,8 @@ Deno.serve(async req=>{
       const note=cleanText(payload.note);
       if(String(payload.note??'').trim().length>2000)throw new Error('Offer note is too long');
 
-      const{data:transaction,error:transactionError}=await service.from('transactions').select('amount,currency').eq('case_id',caseId).order('created_at',{ascending:true}).limit(1).maybeSingle();
-      if(transactionError)throw new Error('Could not validate the purchase amount');
+      const{data:transaction,error:transactionError}=await service.from('transactions').select('amount,currency').eq('case_id',caseId).maybeSingle();
+      if(transactionError)throw new Error(`Could not validate the purchase amount: ${transactionError.message}`);
       if(!transaction)throw new Error('Purchase transaction is missing');
 
       let amount:null|number=null;
