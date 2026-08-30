@@ -1,0 +1,27 @@
+name: Fix strict acceptance role selector
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fix-strict-acceptance-selector.yml']
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: python
+        run: |
+          from pathlib import Path
+          p=Path('.github/workflows/strict-role-isolation-acceptance.yml')
+          s=p.read_text()
+          old="await page.getByRole('button',{name:new RegExp(role,'i')}).click();"
+          new="await page.locator('.roleChoice').filter({hasText:new RegExp(role,'i')}).click();"
+          assert old in s
+          p.write_text(s.replace(old,new,1))
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/strict-role-isolation-acceptance.yml
+          git commit -m 'Fix strict acceptance role selector'
+          git push origin main
