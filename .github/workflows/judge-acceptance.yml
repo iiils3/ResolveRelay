@@ -1,0 +1,32 @@
+name: ResolveRelay final judge acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/judge-acceptance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify private judge accounts, RLS fixtures, and AI relay
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS --max-time 45 https://mbhiaqhlhxjibuckdikq.supabase.co/functions/v1/judge-check)"
+          BODY="$body" python - <<'PY'
+          import json, os
+          d=json.loads(os.environ['BODY'])
+          required=['ok','consumerLogin','merchantLogin','consumerRole','merchantRole','hasReady','hasMerchantViewed','hasResolutionOffered','aiOk']
+          for k in required:
+              assert d.get(k) is True, f'{k} failed'
+          assert d.get('consumerCaseCount',0) >= 3
+          assert d.get('merchantAssignedCount',0) >= 3
+          assert d.get('aiStatus') == 200, f"AI status {d.get('aiStatus')}"
+          print('Final judge acceptance passed: auth, RLS fixtures, and AI relay are healthy.')
+          PY
