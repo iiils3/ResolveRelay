@@ -1,0 +1,13 @@
+create index if not exists case_events_actor_profile_idx on public.case_events(actor_profile_id);
+create index if not exists case_members_profile_idx on public.case_members(profile_id);
+create index if not exists case_members_merchant_idx on public.case_members(merchant_id);
+create index if not exists contact_attempts_profile_idx on public.contact_attempts(profile_id);
+create index if not exists evidence_case_idx on public.evidence(case_id);
+create index if not exists evidence_uploaded_by_idx on public.evidence(uploaded_by);
+create index if not exists merchant_responses_case_idx on public.merchant_responses(case_id);
+create index if not exists merchant_responses_merchant_idx on public.merchant_responses(merchant_id);
+create index if not exists merchant_support_channels_merchant_idx on public.merchant_support_channels(merchant_id);
+create index if not exists merchants_owner_profile_idx on public.merchants(owner_profile_id);
+create index if not exists notifications_case_idx on public.notifications(case_id);
+create index if not exists resolution_offers_case_idx on public.resolution_offers(case_id);
+create index if not exists resolution_offers_merchant_idx on public.resolution_offers(merchant_id);
