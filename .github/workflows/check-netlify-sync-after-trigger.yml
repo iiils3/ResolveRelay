@@ -1,0 +1,29 @@
+name: Verify forced Netlify production sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/check-netlify-sync-after-trigger.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait then inspect live asset
+        shell: python
+        run: |
+          import re, urllib.request, time
+          time.sleep(70)
+          base='https://resolverelai.netlify.app'
+          req=urllib.request.Request(base+'/?sync='+str(int(time.time())),headers={'Cache-Control':'no-cache','User-Agent':'ResolveRelay-QA'})
+          html=urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace')
+          m=re.search(r'<script[^>]+src=["\']([^"\']+\.js)["\']',html)
+          if not m: raise SystemExit('No live JS ref')
+          print('LIVE_JS='+m.group(1))
+          print('EXPECTED_CURRENT_JS=./assets/index-D9He5mwB.js')
+          print('SYNCED='+str(m.group(1)=='./assets/index-D9He5mwB.js').lower())
+          if m.group(1)!='./assets/index-D9He5mwB.js': raise SystemExit(2)
