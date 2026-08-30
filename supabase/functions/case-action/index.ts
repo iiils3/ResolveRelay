@@ -53,11 +53,14 @@ Deno.serve(async req=>{
     if(recordError)throw new Error(`Case load failed: ${recordError.message}`);
     if(!record)throw new Error('Case not found');
 
-    const{data:profile}=await service.from('profiles').select('role').eq('id',user.id).single();
-    let role=record.consumer_id===user.id?'consumer':null;
-    if(profile?.role==='merchant'){
-      const{data:membership}=await service.from('case_members').select('id').eq('case_id',caseId).eq('profile_id',user.id).is('revoked_at',null).maybeSingle();
-      if(membership)role='merchant';
+    const{data:profile,error:profileError}=await service.from('profiles').select('role').eq('id',user.id).single();
+    if(profileError||!profile)throw new Error('Profile is unavailable');
+    let role:'consumer'|'merchant'|null=null;
+    if(profile.role==='consumer'&&record.consumer_id===user.id)role='consumer';
+    if(profile.role==='merchant'){
+      const{data:members,error:membershipError}=await service.from('case_members').select('id').eq('case_id',caseId).eq('profile_id',user.id).eq('role','merchant').is('revoked_at',null).limit(1);
+      if(membershipError)throw new Error(`Membership check failed: ${membershipError.message}`);
+      if(members?.length)role='merchant';
     }
     if(!role||!transitions[role]?.[action]?.includes(record.status))throw new Error('Action is not permitted in the current case state');
 
@@ -140,9 +143,12 @@ Deno.serve(async req=>{
     });
     if(eventError)console.error('case event insert failed after state update',eventError);
 
-    const recipient=role==='merchant'
-      ?record.consumer_id
-      :(await service.from('case_members').select('profile_id').eq('case_id',caseId).eq('role','merchant').is('revoked_at',null).maybeSingle()).data?.profile_id;
+    let recipient:string|undefined;
+    if(role==='merchant')recipient=record.consumer_id;
+    else{
+      const{data:merchantMembers}=await service.from('case_members').select('profile_id').eq('case_id',caseId).eq('role','merchant').is('revoked_at',null).not('profile_id','is',null).limit(1);
+      recipient=merchantMembers?.[0]?.profile_id??undefined;
+    }
     if(recipient){
       const notification=action==='request_evidence'
         ?{type:'evidence_requested',title:'Merchant requested additional evidence',body:'The merchant requested additional purchase evidence for this case.'}
