@@ -1,0 +1,30 @@
+name: Seed ResolveRelay judge fixtures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/seed-judge-fixtures.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Seed private judge fixtures without printing credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(curl -fsS --max-time 30 https://mbhiaqhlhxjibuckdikq.supabase.co/functions/v1/judge-bootstrap)"
+          BODY="$body" python - <<'PY'
+          import json, os
+          data=json.loads(os.environ['BODY'])
+          assert data.get('ok') is True, data.get('error','bootstrap failed')
+          assert data.get('consumer',{}).get('email')
+          assert data.get('merchant',{}).get('email')
+          assert len(data.get('cases',[])) >= 2
+          print('Judge fixtures prepared successfully; credentials intentionally suppressed.')
+          PY
