@@ -1,3 +1,5 @@
+# ResolveRelay Netlify production configuration
+# Groq is the primary AI provider when GROQ_API_KEY is available.
 [build]
   command = "npm run build"
   publish = "dist"
