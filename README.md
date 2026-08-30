@@ -4,9 +4,11 @@ ResolveRelay turns a post-purchase problem into a structured claim between a con
 
 ## Deployment
 
-The repository is now named **`iiils3/ResolveRelay`** and is the source of truth for the project.
+The repository **`iiils3/ResolveRelay`** is the source of truth for the project.
 
-The application has been migrated away from AppDeploy for its active runtime path and is prepared for Netlify:
+Production is deployed from the `main` branch to Netlify:
+
+https://resolverelay.netlify.app
 
 - Vite frontend builds to `dist/`
 - Netlify Functions live under `netlify/functions/`
@@ -14,7 +16,7 @@ The application has been migrated away from AppDeploy for its active runtime pat
 - AI routes read `OPENAI_API_KEY` only from Netlify environment variables
 - Supabase remains the persistent authentication/database/storage backend
 
-Historical AppDeploy backend source under `backend/` is retained only as migration history and is not the intended Netlify runtime.
+Historical AppDeploy backend source under `backend/` is retained only as migration history and is not part of the active Netlify runtime path.
 
 ## Account model
 
@@ -25,7 +27,7 @@ ResolveRelay currently has two fixed account roles:
 
 One email cannot be registered as both roles. Consumer accounts cannot be converted into merchant accounts through an invitation.
 
-The current testing registration endpoint accepts a syntactically valid email and password without email confirmation. This is intentionally temporary and will be replaced by the production registration/verification flow later.
+The current testing registration flow accepts a syntactically valid email and password without email confirmation. This is intentionally temporary and will be replaced by the production registration/verification flow later.
 
 ## Persistence
 
@@ -114,7 +116,7 @@ OPENAI_API_KEY=<server-side secret>
 Optional:
 
 ```text
-OPENAI_MODEL=gpt-5-mini
+OPENAI_MODEL=gpt-5.6-luna
 ```
 
 ## License
