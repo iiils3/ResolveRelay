@@ -1,8 +1,6 @@
 name: Production E2E QA
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -14,8 +12,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for production deploy
-        run: sleep 55
       - name: Check production health
         run: |
           set -euo pipefail
