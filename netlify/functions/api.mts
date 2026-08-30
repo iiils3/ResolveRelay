@@ -22,17 +22,39 @@ const extractText = (data: any) => {
 };
 
 async function generate(system: string, prompt: string, maxOutputTokens: number) {
-  const apiKey = Netlify.env.get('OPENAI_API_KEY');
-  if (!apiKey) throw new Error('OPENAI_API_KEY_MISSING');
-  const model = Netlify.env.get('OPENAI_MODEL') || 'gpt-5.6-luna';
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const groqKey = Netlify.env.get('GROQ_API_KEY');
+  const openAIKey = Netlify.env.get('OPENAI_API_KEY');
+  const provider = groqKey
+    ? {
+        name: 'Groq',
+        apiKey: groqKey,
+        baseUrl: 'https://api.groq.com/openai/v1',
+        model: Netlify.env.get('GROQ_MODEL') || 'openai/gpt-oss-120b',
+      }
+    : openAIKey
+      ? {
+          name: 'OpenAI',
+          apiKey: openAIKey,
+          baseUrl: 'https://api.openai.com/v1',
+          model: Netlify.env.get('OPENAI_MODEL') || 'gpt-5.6-luna',
+        }
+      : null;
+
+  if (!provider) throw new Error('AI_PROVIDER_KEY_MISSING');
+
+  const response = await fetch(`${provider.baseUrl}/responses`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, instructions: system, input: prompt, max_output_tokens: maxOutputTokens }),
+    headers: { Authorization: `Bearer ${provider.apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: provider.model,
+      instructions: system,
+      input: prompt,
+      max_output_tokens: maxOutputTokens,
+    }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    console.error('OpenAI response failed', response.status, data?.error?.code || data?.error?.type || 'unknown');
+    console.error(`${provider.name} response failed`, response.status, data?.error?.code || data?.error?.type || 'unknown');
     throw new Error('AI_PROVIDER_ERROR');
   }
   const text = extractText(data);
