@@ -1,8 +1,8 @@
-# ResolveRelay migration snapshot
+# ResolveRelay migration history
 
-The active Supabase project contains the full historical migration chain. This repository currently preserves the most recent authentication/role hardening migrations that are essential to the current deployed account model.
+This folder preserves the ResolveRelay-specific migration chain applied to the active Supabase project.
 
-Applied ResolveRelay migration history in the hosted project includes:
+Included:
 
 - 202608280001 initial_schema
 - 202608280002 storage
@@ -17,6 +17,6 @@ Applied ResolveRelay migration history in the hosted project includes:
 - 20260829235923 persist_signup_account_role
 - 20260830000730 block_anonymous_resolverelay_access
 
-The unrelated SAYYAD migrations that happen to live in the same hosted Supabase project are intentionally not treated as part of ResolveRelay source.
+The unrelated SAYYAD migrations that happen to live in the same hosted Supabase project are intentionally excluded from ResolveRelay source.
 
-Before creating a brand-new Supabase project from this repository alone, export the earlier ResolveRelay migrations/schema from the hosted project so the full database can be reconstructed exactly.
+Together with the Edge Functions in `../functions/`, these files preserve the database/auth logic required to reconstruct the ResolveRelay backend on a fresh Supabase project. Existing production data itself remains in the active hosted Supabase database and is not committed to GitHub.
