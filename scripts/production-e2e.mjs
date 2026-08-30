@@ -134,7 +134,7 @@ async function main() {
   log('consumer_id', consumerId);
   log('merchant_id', merchantId);
 
-  const duplicate = await fn('test-register', { email: consumerEmail, password, role: 'merchant', name: 'Duplicate QA' }, null);
+  const duplicate = await fn('test-register', { email: consumerEmail, password, role: 'merchant', name: 'Duplicate QA' }, null, { expectError: true });
   assert(duplicate?.error === 'EMAIL_ALREADY_REGISTERED', 'same email was allowed to register twice');
   log('duplicate_email_guard', 'pass');
 
