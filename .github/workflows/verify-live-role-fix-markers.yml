@@ -1,0 +1,40 @@
+name: Verify live role isolation markers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-live-role-fix-markers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect live production bundle
+        shell: python
+        run: |
+          import re, urllib.request, time
+          base='https://resolverelai.netlify.app'
+          html=urllib.request.urlopen(urllib.request.Request(base+'/?m='+str(int(time.time())),headers={'Cache-Control':'no-cache'}),timeout=20).read().decode('utf-8','replace')
+          m=re.search(r'<script[^>]+src=["\']([^"\']+\.js)["\']',html)
+          if not m: raise SystemExit('No JS asset')
+          ref=m.group(1)
+          js=urllib.request.urlopen(urllib.request.Request(base+'/'+ref.lstrip('./')+'?m='+str(int(time.time())),headers={'Cache-Control':'no-cache'}),timeout=30).read().decode('utf-8','replace')
+          checks={
+            'demo_access':'Demo access' in js,
+            'forbidden_guard':'FORBIDDEN' in js,
+            'claim_assistant':'Claim assistant' in js,
+            'merchant_actions':'Merchant actions' in js,
+            'resolution_offers':'resolution_offers' in js,
+            'case_members':'case_members' in js,
+            'chat_key':'rr-chat-' in js,
+          }
+          print('LIVE_JS='+ref)
+          for k,v in checks.items(): print(k+'='+str(v).lower())
+          required=['demo_access','forbidden_guard','claim_assistant','merchant_actions','resolution_offers','case_members','chat_key']
+          missing=[k for k in required if not checks[k]]
+          if missing: raise SystemExit('Missing current-build markers: '+','.join(missing))
+          print('LIVE_ROLE_FIX_MARKERS_OK')
