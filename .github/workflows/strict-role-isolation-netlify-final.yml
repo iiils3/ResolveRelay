@@ -1,0 +1,144 @@
+name: Final Netlify role isolation acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/strict-role-isolation-netlify-final.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for Netlify production
+        run: |
+          sleep 50
+          curl -fsS --max-time 20 https://resolverelai.netlify.app/ >/dev/null
+          curl -fsS --max-time 20 https://resolverelai.netlify.app/api/health
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify strict consumer merchant separation on production
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const SUP='https://mbhiaqhlhxjibuckdikq.supabase.co';
+          const KEY='sb_publishable_AEzTVMOcLg26Q6ZoRw62Dw_jtOCDGCI';
+          const BASE='https://resolverelai.netlify.app/';
+          const CASE='9f52d6ab-23a1-4ef0-b3f0-000000000001';
+          const TOKEN='rr-strict-role-final-20260831';
+          const MARKER='PRIVATE-CONSUMER-CHAT-NETLIFY-8312';
+          const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          const request=async(url,opt={})=>{const r=await fetch(url,opt);const text=await r.text();let data;try{data=JSON.parse(text)}catch{data={raw:text}};return {r,data}};
+          const must=async(url,opt={})=>{const x=await request(url,opt);if(!x.r.ok)throw new Error(`${x.r.status} ${JSON.stringify(x.data)}`);return x.data};
+          const loginApi=role=>must(`${SUP}/functions/v1/demo-login`,{method:'POST',headers:{apikey:KEY,'content-type':'application/json'},body:JSON.stringify({role,email:`qa.${role}.${Date.now()}@example.com`,password:'anything'})});
+          const rest=(path,token)=>must(`${SUP}/rest/v1/${path}`,{headers:{apikey:KEY,Authorization:`Bearer ${token}`}});
+          const action=(token,action,payload={})=>request(`${SUP}/functions/v1/case-action`,{method:'POST',headers:{apikey:KEY,Authorization:`Bearer ${token}`,'content-type':'application/json'},body:JSON.stringify({caseId:CASE,action,payload})});
+
+          const cApi=await loginApi('consumer');
+          const mApi=await loginApi('merchant');
+          const decode=t=>JSON.parse(Buffer.from(t.split('.')[1],'base64url').toString());
+          const cid=decode(cApi.session.access_token).sub,mid=decode(mApi.session.access_token).sub;
+          assert(cid&&mid&&cid!==mid,'Consumer and merchant identities are not separated');
+          assert((await rest(`cases?id=eq.${CASE}&select=id`,mApi.session.access_token)).length===0,'Merchant can read claim before invitation');
+          assert((await rest(`cases?id=eq.${CASE}&select=id,consumer_id`,cApi.session.access_token)).length===1,'Consumer cannot read own claim');
+          const redeemed=await must(`${SUP}/functions/v1/redeem-invite`,{method:'POST',headers:{apikey:KEY,Authorization:`Bearer ${mApi.session.access_token}`,'content-type':'application/json'},body:JSON.stringify({token:TOKEN})});
+          assert(redeemed.caseId===CASE,'Invitation redemption returned wrong claim');
+          const members=await rest(`case_members?case_id=eq.${CASE}&role=eq.merchant&revoked_at=is.null&select=profile_id`,mApi.session.access_token);
+          assert(members.length===1&&members[0].profile_id===mid,`Expected exactly one active merchant, got ${members.length}`);
+          assert(!(await action(cApi.session.access_token,'offer',{kind:'full_refund'})).r.ok,'Consumer executed merchant offer');
+          assert(!(await action(mApi.session.access_token,'accept_offer',{})).r.ok,'Merchant executed consumer accept');
+
+          const browser=await chromium.launch({headless:true});
+          const loginUi=async(page,role)=>{
+            await page.goto(`${BASE}#/auth`,{waitUntil:'networkidle'});
+            await page.getByRole('heading',{name:'Demo access'}).waitFor({timeout:20000});
+            await page.locator('.roleChoice').filter({hasText:new RegExp(role,'i')}).click();
+            await page.locator('input[type=email]').fill(`${role}.${Date.now()}@example.com`);
+            await page.locator('input[type=password]').fill('anything');
+            await page.getByRole('button',{name:new RegExp(`Enter as ${role}`,'i')}).click();
+            await page.waitForURL(/#\/dashboard/,{timeout:20000});
+          };
+
+          const consumerCtx=await browser.newContext({viewport:{width:1440,height:900}});
+          await consumerCtx.addInitScript(()=>localStorage.setItem('rr-lang','en'));
+          const consumer=await consumerCtx.newPage();
+          await loginUi(consumer,'consumer');
+          await consumer.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await consumer.getByText('Transaction Passport',{exact:true}).waitFor({timeout:20000});
+          await consumer.getByText('Claim assistant',{exact:true}).waitFor();
+          assert(await consumer.getByText('Merchant actions',{exact:true}).count()===0,'Consumer has merchant UI before offer');
+          await consumer.getByRole('button',{name:'Use AI assistant'}).click();
+          await consumer.locator('.aiDrawer textarea').last().fill(MARKER);
+          const aiWait=consumer.waitForResponse(r=>r.url().includes('/functions/v1/ai-relay')&&r.request().method()==='POST',{timeout:30000});
+          await consumer.getByRole('button',{name:'Send',exact:true}).click();
+          assert((await aiWait).status()===200,'Consumer AI chat failed');
+          await consumer.getByText(MARKER,{exact:true}).waitFor();
+          await consumer.locator('.aiClose').click();
+
+          const merchantCtx=await browser.newContext({viewport:{width:1440,height:900}});
+          await merchantCtx.addInitScript(()=>localStorage.setItem('rr-lang','en'));
+          const merchant=await merchantCtx.newPage();
+          await loginUi(merchant,'merchant');
+          await merchant.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await merchant.getByText('Transaction Passport',{exact:true}).waitFor({timeout:20000});
+          await merchant.getByText('Merchant actions',{exact:true}).waitFor();
+          assert(await merchant.getByText('Claim assistant',{exact:true}).count()===0,'Merchant sees consumer AI assistant');
+          assert(await merchant.getByRole('button',{name:'Use AI assistant'}).count()===0,'Merchant has consumer AI button');
+          assert(!(await merchant.locator('body').innerText()).includes(MARKER),'Merchant sees private consumer chat');
+          assert(await merchant.getByRole('button',{name:'Accept offer'}).count()===0,'Merchant has consumer offer response control');
+
+          await merchant.waitForTimeout(1200);
+          const offer=await action(mApi.session.access_token,'offer',{kind:'full_refund',note:'Final strict isolation QA resolution',label:'Resolution offered'});
+          if(!offer.r.ok)throw new Error(`Merchant offer failed ${offer.r.status}: ${JSON.stringify(offer.data)}`);
+          const offers=await rest(`resolution_offers?case_id=eq.${CASE}&status=eq.pending&select=id,status,kind`,cApi.session.access_token);
+          console.log('CONSUMER_PENDING_OFFERS',offers.length);
+          assert(offers.length===1,'Consumer REST cannot read pending merchant offer');
+
+          await consumer.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await consumer.getByText('Claim assistant',{exact:true}).waitFor({timeout:20000});
+          await consumer.getByRole('button',{name:'Accept offer'}).waitFor({timeout:20000});
+          await consumer.getByRole('button',{name:'Decline offer'}).waitFor();
+          assert(await consumer.getByText('Merchant actions',{exact:true}).count()===0,'Consumer morphed into merchant after merchant offer');
+          assert(await consumer.getByRole('button',{name:'Offer resolution'}).count()===0,'Consumer has merchant offer control');
+          await consumer.getByRole('button',{name:'Use AI assistant'}).click();
+          await consumer.getByText(MARKER,{exact:true}).waitFor();
+          await consumer.locator('.aiClose').click();
+
+          await merchant.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await merchant.getByText('Transaction Passport',{exact:true}).waitFor({timeout:20000});
+          assert(await merchant.getByText('Claim assistant',{exact:true}).count()===0,'Merchant AI appeared after offer');
+          assert(await merchant.getByRole('button',{name:'Accept offer'}).count()===0,'Merchant can accept own offer through UI');
+          assert(!(await merchant.locator('body').innerText()).includes(MARKER),'Private chat leaked to merchant after offer');
+
+          await consumer.goto(`${BASE}#/dashboard`,{waitUntil:'networkidle'});
+          await consumer.getByRole('button',{name:/Sign out/i}).click();
+          await consumer.waitForTimeout(700);
+          await loginUi(consumer,'merchant');
+          await consumer.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await consumer.getByText('Transaction Passport',{exact:true}).waitFor({timeout:20000});
+          assert(await consumer.getByText('Claim assistant',{exact:true}).count()===0,'Same-browser role switch leaked consumer AI UI');
+          assert(!(await consumer.locator('body').innerText()).includes(MARKER),'Same-browser role switch leaked private consumer chat');
+
+          const mobileCtx=await browser.newContext({viewport:{width:390,height:844}});
+          await mobileCtx.addInitScript(()=>localStorage.setItem('rr-lang','en'));
+          const mobile=await mobileCtx.newPage();
+          await loginUi(mobile,'consumer');
+          await mobile.goto(`${BASE}#/claim/${CASE}`,{waitUntil:'networkidle'});
+          await mobile.getByText('Claim assistant',{exact:true}).waitFor({timeout:20000});
+          assert(await mobile.getByText('Merchant actions',{exact:true}).count()===0,'Mobile consumer has merchant UI');
+          assert((await mobile.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth))<=2,'Mobile horizontal overflow');
+
+          await consumerCtx.close();await merchantCtx.close();await mobileCtx.close();await browser.close();
+          console.log('STRICT_ROLE_ISOLATION_NETLIFY_OK');
+          NODE
