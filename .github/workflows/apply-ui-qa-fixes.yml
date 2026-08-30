@@ -19,6 +19,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Patch one generated-string escape
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-ui-qa-fixes.mjs')
+          s = p.read_text()
+          s = s.replace(r"claim\'s current state", r"claim\\'s current state")
+          p.write_text(s)
+          PY
       - name: Apply UI QA transformation
         run: node scripts/apply-ui-qa-fixes.mjs
       - name: Verify production build
