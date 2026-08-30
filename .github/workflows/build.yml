@@ -40,8 +40,3 @@ jobs:
           cat "$response_file"
           test "$status" = "200"
           grep -q '"text"' "$response_file"
-      - name: Corrected temporary AI diagnostic
-        if: github.event_name == 'push'
-        run: |
-          set -euo pipefail
-          curl -fsS --retry 2 --retry-delay 4 https://resolverelay.netlify.app/internal/ai-diagnostic
