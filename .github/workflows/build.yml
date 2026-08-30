@@ -16,3 +16,4 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm run build
+      - run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-api.mjs
