@@ -13,10 +13,6 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 delete pkg.scripts.start;
 fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
-const workflow = `name: Build ResolveRelay\n\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n          cache: npm\n      - name: Install locked dependencies\n        run: npm ci --no-audit --no-fund\n      - name: Typecheck\n        run: npm run typecheck\n      - name: Build frontend\n        run: npm run build\n      - name: Validate WebMCP registration exists\n        run: grep -q 'modelContext' src/App.tsx && grep -q 'registerTool' src/App.tsx\n      - name: Validate AI relay source exists\n        run: test -f supabase/functions/ai-relay/index.ts\n      - name: Audit production dependencies\n        run: npm audit --omit=dev --audit-level=high\n`;
-fs.writeFileSync('.github/workflows/build.yml', workflow);
-
 if (fs.existsSync('server.mjs')) fs.rmSync('server.mjs');
-fs.rmSync('.github/workflows/migrate-static.yml');
 fs.rmSync('scripts/migrate-static.mjs');
 try { fs.rmdirSync('scripts'); } catch {}
