@@ -9,34 +9,42 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-audit --no-fund
-      - run: npm run build
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
       - name: Validate Netlify function
         run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-netlify-api.mjs
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Wait for Netlify production deploy
         if: github.event_name == 'push'
-        run: sleep 45
+        run: sleep 55
       - name: Check production API health
         if: github.event_name == 'push'
         run: |
           set -euo pipefail
-          body="$(curl -fsS --retry 3 --retry-delay 5 https://resolverelai.netlify.app/api/health)"
+          body="$(curl -fsS --retry 5 --retry-delay 5 https://resolverelai.netlify.app/api/health)"
           echo "$body"
           echo "$body" | grep -q '"ok":true'
-      - name: Check production AI route
+      - name: Verify AI routes reject anonymous quota use
         if: github.event_name == 'push'
         run: |
           set -euo pipefail
           response_file="$(mktemp)"
-          status="$(curl -sS --retry 2 --retry-delay 4 -o "$response_file" -w '%{http_code}' \
+          status="$(curl -sS --retry 2 --retry-delay 3 -o "$response_file" -w '%{http_code}' \
             -H 'Content-Type: application/json' \
-            -d '{"task":"next_step","lang":"en","claim":{"title":"Smoke test claim","description":"Item was not delivered","requested_resolution":"full_refund","status":"prepared"}}' \
+            -d '{"task":"next_step","lang":"en","claim":{"title":"Anonymous smoke test"}}' \
             https://resolverelai.netlify.app/api/claim-assist)"
           cat "$response_file"
-          test "$status" = "200"
-          grep -q '"text"' "$response_file"
+          test "$status" = "401"
+          grep -q 'Authentication required' "$response_file"
