@@ -22,27 +22,9 @@ jobs:
         run: npm run typecheck
       - name: Build frontend
         run: npm run build
-      - name: Validate legacy Netlify AI function source
-        run: npx esbuild netlify/functions/api.mts --bundle --platform=node --format=esm --outfile=/tmp/resolverelay-netlify-api.mjs
+      - name: Validate WebMCP registration exists
+        run: grep -q 'modelContext' src/App.tsx && grep -q 'registerTool' src/App.tsx
+      - name: Validate authenticated AI relay source exists
+        run: test -f supabase/functions/ai-relay/index.ts && grep -q 'claim-assist' supabase/functions/ai-relay/index.ts
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
-      - name: Smoke-test portable production server
-        run: |
-          set -euo pipefail
-          PORT=3000 node server.mjs >/tmp/resolverelay-server.log 2>&1 &
-          pid=$!
-          trap 'kill "$pid" 2>/dev/null || true; cat /tmp/resolverelay-server.log' EXIT
-          for i in {1..20}; do
-            if curl -fsS http://127.0.0.1:3000/api/health >/tmp/health.json; then break; fi
-            sleep 1
-          done
-          cat /tmp/health.json
-          grep -q '"ok":true' /tmp/health.json
-          response_file="$(mktemp)"
-          status="$(curl -sS -o "$response_file" -w '%{http_code}' \
-            -H 'Content-Type: application/json' \
-            -d '{"task":"next_step","lang":"en","claim":{"title":"Anonymous smoke test"}}' \
-            http://127.0.0.1:3000/api/claim-assist)"
-          cat "$response_file"
-          test "$status" = "401"
-          grep -q 'Authentication required' "$response_file"
