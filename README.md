@@ -19,7 +19,7 @@ ResolveRelay exposes the claim as explicit tools. This lets an agent:
 - help a merchant request evidence, offer a resolution, or reject a claim;
 - operate against the same server-side state and permissions as the human UI.
 
-The important distinction is that **WebMCP is not an automation bypass**. Read tools are marked read-only. State-changing tools are registered only for the correct account role and claim state, request explicit human confirmation, and still execute through the authorized Supabase Edge Function state machine.
+The important distinction is that **WebMCP is not an automation bypass**. Read tools are marked read-only and data-bearing tools are marked as potentially untrusted content. State-changing tools are registered only for the correct account role and claim state, request explicit human confirmation, and still execute through the authorized Supabase Edge Function state machine.
 
 ## What humans and agents can do together
 
@@ -73,7 +73,7 @@ The live application can be used in a normal browser. To evaluate WebMCP specifi
 4. Ask the agent to inspect the claim context or readiness first.
 5. Ask it to perform a write action such as submitting the claim or offering a resolution. The tool should request confirmation before the protected server action executes.
 
-A recommended judge/demo sequence is documented in [`HACKATHON.md`](./HACKATHON.md).
+A recommended judge/demo sequence and a sub-three-minute video script are documented in [`HACKATHON.md`](./HACKATHON.md).
 
 ## Architecture
 
@@ -112,15 +112,31 @@ React + TypeScript + Vite
 - A merchant receives a claim only through a hashed, expiring, single-use invitation.
 - Sensitive claim transitions are enforced again on the server, including legal state transitions and optimistic version checks.
 - Merchant evidence requests and rejections require written messages server-side.
-- Partial refunds must be positive and cannot exceed the original purchase amount.
+- Partial refunds must be positive and cannot exceed the original purchase amount; the UI enforces the same bound before submission.
 - Evidence storage is private; access uses short-lived signed URLs.
 - Netlify AI/support routes require a registered Supabase session, reducing anonymous provider-quota abuse.
 - Merchant-page fetching validates public destinations and re-validates redirects to prevent private-network SSRF pivots.
-- User/claim/merchant website text is treated as untrusted model input and cannot override the AI system rules.
+- User/claim/merchant website text is treated as untrusted model input and WebMCP content rather than instructions.
 - AI provider keys are server-side secrets and are never shipped to the browser.
-- Runtime production dependencies currently report zero known npm audit vulnerabilities.
+- Runtime production dependencies reported zero known npm audit vulnerabilities in the finalization check.
 
 ResolveRelay is not a law firm and does not provide legal advice.
+
+## Final validation
+
+Before finalizing the competition branch, the live Supabase backend passed an end-to-end consumer-to-merchant test covering:
+
+- account roles and duplicate-email guard;
+- RLS isolation before merchant assignment;
+- secure merchant invitation redemption;
+- claim submission and merchant view transition;
+- resolution offer, acceptance, refund confirmation, and persisted closed state;
+- merchant rejection and persisted rejection reason;
+- rejection of zero and above-purchase partial refunds;
+- valid partial-refund offer and consumer decline;
+- persisted audit history across fresh sign-ins.
+
+Temporary QA accounts and claims were removed after the successful run, and the temporary admin testing-registration endpoint was disabled.
 
 ## Persistence
 
@@ -171,9 +187,9 @@ OPENAI_MODEL=<supported model>
 ## Repository notes
 
 - `main` is the production source of truth.
-- `supabase/` contains the ResolveRelay migration chain and Edge Function source needed to reconstruct the backend behavior.
-- `backend/` contains historical pre-Netlify migration source only; it is not in the active production runtime path.
+- `supabase/` contains the ResolveRelay migration chain and active Edge Function source needed to reconstruct the backend behavior.
 - Existing production database rows and secrets are intentionally not stored in GitHub.
+- Pre-finalization migration and QA scaffolding is retained in Git history/backup branches rather than the final source tree.
 
 ResolveRelay and its WebMCP implementation were built during the WebMCP Challenge submission window.
 
