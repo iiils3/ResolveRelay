@@ -1,16 +1,15 @@
 # ResolveRelay Supabase backend
 
-This folder is a source backup of the ResolveRelay Supabase backend currently deployed in project `mbhiaqhlhxjibuckdikq`.
+This folder contains the source needed to reconstruct the ResolveRelay persistence and authorized claim-action backend currently deployed in Supabase project `mbhiaqhlhxjibuckdikq`.
 
-Included here:
+Included Edge Functions:
 
-- `functions/test-register` — temporary testing registration endpoint that creates confirmed password accounts and fixes the selected account role at creation.
-- `functions/case-action` — authorized consumer/merchant state transitions.
-- `functions/merchant-invite` — creates hashed, expiring merchant invitations.
-- `functions/redeem-invite` — accepts invitations only for merchant-role accounts.
-- `functions/evidence-url` — creates short-lived signed evidence URLs.
-- `migrations/` — the complete ResolveRelay-specific migration chain currently applied to the hosted project, from initial schema through product fingerprints, product URLs, persistent account roles, and anonymous-access lockdown.
+- `functions/case-action` — authorized consumer/merchant state transitions, server-side input validation, partial-refund bounds, optimistic version checks, audit events, and notifications.
+- `functions/merchant-invite` — creates hashed, expiring merchant invitations for consumer-owned claims.
+- `functions/redeem-invite` — redeems an invitation only for an authenticated merchant-role account.
+- `functions/evidence-url` — creates short-lived signed URLs for private evidence files.
+- `migrations/` — the ResolveRelay-specific migration chain covering schema, storage, RLS/grants, realtime notifications, product fingerprints, product URLs, persistent signup roles, anonymous-access hardening, and the least-privilege transaction read required by `case-action`.
 
-The hosted database remains the active persistence layer during the AppDeploy-to-Netlify migration. Existing user/claim data is not stored in GitHub; GitHub preserves the code and database definition needed to reconstruct the backend.
+Production signup uses Supabase Auth directly. The temporary admin testing-registration endpoint used during development has been disabled on the hosted project and is intentionally not included in this repository.
 
-Never commit Supabase service-role keys, database passwords, or provider secrets to this repository.
+The hosted database remains the source of truth for production rows. User data, evidence bytes, passwords, service-role/secret keys, database passwords, and AI provider secrets are never committed to GitHub.
