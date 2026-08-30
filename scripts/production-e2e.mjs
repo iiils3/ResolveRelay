@@ -91,8 +91,10 @@ async function inviteAndAssign(consumerToken, merchantToken, caseId, { verifyIso
   if (verifyIsolation) {
     const beforeMerchant = await select(merchantToken, 'cases', `id=eq.${caseId}&select=id,status`);
     assert(beforeMerchant.length === 0, 'RLS failure: unassigned merchant can read consumer case');
-    const anon = await select(undefined, 'cases', `id=eq.${caseId}&select=id,status`);
-    assert(anon.length === 0, 'RLS failure: anonymous client can read consumer case');
+    const anonAttempt = await raw(`/rest/v1/cases?id=eq.${caseId}&select=id,status`);
+    const anonBlocked = [401, 403].includes(anonAttempt.response.status) ||
+      (anonAttempt.response.ok && Array.isArray(anonAttempt.data) && anonAttempt.data.length === 0);
+    assert(anonBlocked, `RLS failure: anonymous client can read consumer case (${anonAttempt.response.status})`);
   }
 
   const invitation = await fn('merchant-invite', { caseId }, consumerToken);
