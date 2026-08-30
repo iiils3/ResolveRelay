@@ -65,9 +65,9 @@ The repository now contains:
 - Chrome extension MVP
 - current authentication/persistence test suite
 - current ResolveRelay Supabase Edge Functions
-- latest role-persistence and anonymous-lockdown database migrations
+- the complete ResolveRelay-specific Supabase migration chain from initial schema through the latest role and anonymous-access hardening
 
-The hosted Supabase project remains the source of truth for existing production data.
+The hosted Supabase project remains the source of truth for existing production data; data rows and secrets are intentionally not committed to GitHub.
 
 ## Security model
 
