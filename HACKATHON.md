@@ -205,3 +205,12 @@ Temporary QA users/claims and temporary admin registration/self-test endpoints w
 - [ ] Record/publish a public YouTube demo under three minutes
 - [ ] Paste/adapt the Devpost description above
 - [ ] Perform final strict judge-mode pass, then freeze production changes
+
+## Challenge-focused collaboration surfaces
+
+- **Human + Agent Workspace:** every claim now exposes the current WebMCP connection state, the role-aware actions that are valid now, and a starter prompt that demonstrates human-approved agent collaboration.
+- **Claim Dossier:** consumers and merchants can print or save a neutral fact packet as PDF containing transaction facts, evidence index, contact log, offers, and the audit timeline. It is explicitly not legal advice or an official bank/government form.
+- **Follow-up clock:** a 72-hour ResolveRelay workflow checkpoint is derived from the latest recorded activity while waiting for a merchant. It is not a legal deadline and never auto-escalates externally.
+- **WebMCP tools:** `get_follow_up_status` and `get_claim_dossier` expose the same structured state to agents. `log_contact_attempt` is registered immediately for consumer claims rather than only after another tool is called.
+- **State-aware controls:** merchant actions, merchant invitations, and evidence upload controls are hidden/limited when the current state does not permit them, reducing dead-end buttons during judge testing.
+
