@@ -13,10 +13,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      HAS_NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
-      HAS_NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID != '' }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      NETLIFY_PROD_DEPLOY_HOOK: ${{ secrets.NETLIFY_PROD_DEPLOY_HOOK }}
     steps:
       - name: Check credential presence only
+        shell: bash
         run: |
-          echo "HAS_NETLIFY_AUTH_TOKEN=$HAS_NETLIFY_AUTH_TOKEN"
-          echo "HAS_NETLIFY_SITE_ID=$HAS_NETLIFY_SITE_ID"
+          if [ -n "$NETLIFY_AUTH_TOKEN" ]; then echo 'HAS_NETLIFY_AUTH_TOKEN=true'; else echo 'HAS_NETLIFY_AUTH_TOKEN=false'; fi
+          if [ -n "$NETLIFY_SITE_ID" ]; then echo 'HAS_NETLIFY_SITE_ID=true'; else echo 'HAS_NETLIFY_SITE_ID=false'; fi
+          if [ -n "$NETLIFY_PROD_DEPLOY_HOOK" ]; then echo 'HAS_NETLIFY_PROD_DEPLOY_HOOK=true'; else echo 'HAS_NETLIFY_PROD_DEPLOY_HOOK=false'; fi
