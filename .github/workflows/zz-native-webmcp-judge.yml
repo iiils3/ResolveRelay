@@ -1,0 +1,115 @@
+name: Native WebMCP judge test
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/zz-native-webmcp-judge.yml'
+permissions:
+  contents: write
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser driver only
+        run: npm install --no-save --package-lock=false playwright-core@latest
+      - name: Run native WebMCP browser judge
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          google-chrome --version
+          cat > /tmp/webmcp-judge.mjs <<'JS'
+          import { chromium } from 'playwright-core';
+          import fs from 'node:fs';
+          const base='https://iiils3.github.io/ResolveRelay/';
+          const executablePath=process.env.CHROME_PATH || '/usr/bin/google-chrome';
+          const browser=await chromium.launch({headless:true,executablePath,args:['--enable-features=WebMCPTesting,DevToolsWebMCPSupport','--no-sandbox']});
+          const report={chrome:'',consumer:{},merchant:{},nativeAvailable:false};
+          const login=async(role)=>{
+            const ctx=await browser.newContext({viewport:{width:role==='consumer'?1440:1280,height:1000}});
+            const page=await ctx.newPage();
+            await page.addInitScript(()=>localStorage.setItem('rr-lang','en'));
+            const consoleErrors=[];page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});page.on('pageerror',e=>consoleErrors.push(String(e)));
+            await page.goto(base+'#/auth',{waitUntil:'networkidle',timeout:60000});
+            await page.getByRole('button',{name:role==='consumer'?'Consumer Creates and follows claims':'Merchant Receives and responds to claims'}).click();
+            await page.getByLabel('Email').fill(`${role}.judge@example.com`);
+            await page.getByLabel('Password').fill('judge-test');
+            await page.getByRole('button',{name:role==='consumer'?'Enter as consumer':'Enter as merchant'}).click();
+            await page.waitForURL(/#\/dashboard/,{timeout:30000});
+            await page.waitForTimeout(1500);
+            return {ctx,page,consoleErrors};
+          };
+          const inspectTools=async(page)=>await page.evaluate(async()=>{
+            const mc=document.modelContext;
+            if(!mc||typeof mc.getTools!=='function')return {available:false,typeofContext:typeof mc,navigatorContext:typeof navigator.modelContext};
+            const tools=await mc.getTools();
+            return {available:true,names:tools.map(t=>t.name).sort(),meta:tools.map(t=>({name:t.name,title:t.title,readOnly:t.annotations?.readOnlyHint,untrusted:t.annotations?.untrustedContentHint}))};
+          });
+          // Consumer: canonical claim with a pending resolution offer.
+          {
+            const {ctx,page,consoleErrors}=await login('consumer');
+            await page.getByText('Refund not received',{exact:true}).first().click();
+            await page.waitForURL(/#\/claim\//,{timeout:15000}).catch(()=>page.waitForURL(/#\/case\//,{timeout:15000}));
+            await page.getByText('Human + agent workspace',{exact:true}).waitFor({timeout:15000});
+            await page.getByText('Exportable claim dossier',{exact:true}).waitFor();
+            await page.getByRole('button',{name:'Accept offer'}).waitFor();
+            const tools=await inspectTools(page);report.consumer.tools=tools;report.nativeAvailable=Boolean(tools.available);
+            if(!tools.available)throw new Error('Native document.modelContext.getTools() unavailable in judge Chrome');
+            for(const name of ['get_case_context','get_case_history','get_notifications','get_contact_log','get_available_actions','get_claim_readiness','get_follow_up_status','get_claim_dossier','log_contact_attempt','accept_resolution','decline_resolution'])if(!tools.names.includes(name))throw new Error('consumer tool missing: '+name);
+            const dossier=await page.evaluate(async()=>{const mc=document.modelContext;const tools=await mc.getTools();const t=tools.find(x=>x.name==='get_claim_dossier');return await mc.executeTool(t,'{}')});
+            const actionGate=await page.evaluate(async()=>{const mc=document.modelContext;const tools=await mc.getTools();const t=tools.find(x=>x.name==='accept_resolution');return await mc.executeTool(t,'{"confirmed":false}')});
+            report.consumer.dossier=JSON.parse(JSON.stringify(dossier));report.consumer.actionGate=JSON.parse(JSON.stringify(actionGate));
+            if(!JSON.stringify(actionGate).includes('requiresConfirmation'))throw new Error('consumer consequential action did not require confirmation');
+            const overflow=await page.evaluate(()=>({vw:innerWidth,html:document.documentElement.scrollWidth,body:document.body.scrollWidth}));report.consumer.overflow=overflow;if(overflow.html>overflow.vw+1||overflow.body>overflow.vw+1)throw new Error('consumer horizontal overflow');
+            await page.screenshot({path:'/tmp/consumer-webmcp.png',fullPage:true});
+            report.consumer.consoleErrors=consoleErrors.filter(x=>!x.includes('favicon'));
+            await ctx.close();
+          }
+          // Merchant: canonical merchant-viewed claim where all merchant resolution actions are valid.
+          {
+            const {ctx,page,consoleErrors}=await login('merchant');
+            await page.getByText('Order not delivered',{exact:true}).first().click();
+            await page.waitForURL(/#\/(claim|case)\//,{timeout:15000});
+            await page.getByText('Human + agent workspace',{exact:true}).waitFor({timeout:15000});
+            await page.getByText('Merchant actions',{exact:true}).waitFor();
+            const tools=await inspectTools(page);report.merchant.tools=tools;
+            if(!tools.available)throw new Error('Native WebMCP missing for merchant');
+            for(const name of ['get_case_context','get_case_history','get_notifications','get_contact_log','get_available_actions','get_claim_readiness','get_follow_up_status','get_claim_dossier','merchant_request_evidence','merchant_offer_resolution','merchant_reject_case'])if(!tools.names.includes(name))throw new Error('merchant tool missing: '+name);
+            for(const forbidden of ['accept_resolution','decline_resolution','create_merchant_invitation','submit_case_to_merchant','log_contact_attempt'])if(tools.names.includes(forbidden))throw new Error('merchant received forbidden consumer tool: '+forbidden);
+            const actions=await page.evaluate(async()=>{const mc=document.modelContext;const tools=await mc.getTools();return await mc.executeTool(tools.find(x=>x.name==='get_available_actions'),'{}')});
+            const gate=await page.evaluate(async()=>{const mc=document.modelContext;const tools=await mc.getTools();return await mc.executeTool(tools.find(x=>x.name==='merchant_offer_resolution'),JSON.stringify({confirmed:false,kind:'partial_refund',amount:20,currency:'USD',note:'Judge test'}))});
+            report.merchant.actions=JSON.parse(JSON.stringify(actions));report.merchant.actionGate=JSON.parse(JSON.stringify(gate));
+            if(!JSON.stringify(gate).includes('requiresConfirmation'))throw new Error('merchant consequential action did not require confirmation');
+            const overflow=await page.evaluate(()=>({vw:innerWidth,html:document.documentElement.scrollWidth,body:document.body.scrollWidth}));report.merchant.overflow=overflow;if(overflow.html>overflow.vw+1||overflow.body>overflow.vw+1)throw new Error('merchant horizontal overflow');
+            await page.screenshot({path:'/tmp/merchant-webmcp.png',fullPage:true});
+            report.merchant.consoleErrors=consoleErrors.filter(x=>!x.includes('favicon'));
+            await ctx.close();
+          }
+          fs.writeFileSync('/tmp/webmcp-report.json',JSON.stringify(report,null,2));
+          console.log(JSON.stringify(report,null,2));
+          await browser.close();
+          JS
+          node /tmp/webmcp-judge.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-webmcp-judge
+          path: |
+            /tmp/webmcp-report.json
+            /tmp/consumer-webmcp.png
+            /tmp/merchant-webmcp.png
+          if-no-files-found: ignore
+      - name: Remove one-time workflow
+        if: success()
+        run: |
+          rm -f .github/workflows/zz-native-webmcp-judge.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .github/workflows
+          git commit -m 'Remove one-time native WebMCP judge workflow'
+          git push origin main
