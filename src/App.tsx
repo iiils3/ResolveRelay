@@ -7,7 +7,7 @@ const SUPABASE_URL='https://mbhiaqhlhxjibuckdikq.supabase.co';
 const SUPABASE_KEY='sb_publishable_AEzTVMOcLg26Q6ZoRw62Dw_jtOCDGCI';
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
 const api={post:async(path:string,body?:unknown)=>{const {data:{session}}=await supabase.auth.getSession();if(!session)throw new Error('AUTH_REQUIRED');const route=path.replace(/^\/api\//,'');const {data,error}=await supabase.functions.invoke('ai-relay',{body:{route,payload:body??{}}});if(error)throw error;if(data?.error)throw new Error(data.error);return {data}}};
-const getModelContext=()=> getModelContext() || (navigator as any).modelContext || null;
+const getModelContext=()=> (document as any).modelContext || (navigator as any).modelContext || null;
 type Lang='ar'|'en';
 type CaseRow={id:string;title:string;description:string;status:string;requested_resolution:string;created_at:string;consumer_id:string;merchant_id:string|null;issue_type:string;transactions?:Txn[];resolution_offers?:Offer[];merchant_responses?:ResponseRow[];case_events?:EventRow[];evidence?:Array<{id:string;file_name:string}>;contact_attempts?:ContactAttempt[]};
 type ContactAttempt={id:string;case_id:string;profile_id:string;channel:string;contacted_at:string;outcome:string;note:string;merchant_visible:boolean;created_at:string};
