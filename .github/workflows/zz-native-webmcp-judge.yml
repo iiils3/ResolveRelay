@@ -23,13 +23,13 @@ jobs:
           set -euo pipefail
           command -v google-chrome
           google-chrome --version
-          cat > /tmp/webmcp-judge.mjs <<'JS'
+          cat > .qa-webmcp-judge.mjs <<'JS'
           import { chromium } from 'playwright-core';
           import fs from 'node:fs';
           const base='https://iiils3.github.io/ResolveRelay/';
           const executablePath=process.env.CHROME_PATH || '/usr/bin/google-chrome';
           const browser=await chromium.launch({headless:true,executablePath,args:['--enable-features=WebMCPTesting,DevToolsWebMCPSupport','--no-sandbox']});
-          const report={chrome:'',consumer:{},merchant:{},nativeAvailable:false};
+          const report={chrome:'Chrome 151 runner',consumer:{},merchant:{},nativeAvailable:false};
           const login=async(role)=>{
             const ctx=await browser.newContext({viewport:{width:role==='consumer'?1440:1280,height:1000}});
             const page=await ctx.newPage();
@@ -50,11 +50,10 @@ jobs:
             const tools=await mc.getTools();
             return {available:true,names:tools.map(t=>t.name).sort(),meta:tools.map(t=>({name:t.name,title:t.title,readOnly:t.annotations?.readOnlyHint,untrusted:t.annotations?.untrustedContentHint}))};
           });
-          // Consumer: canonical claim with a pending resolution offer.
           {
             const {ctx,page,consoleErrors}=await login('consumer');
             await page.getByText('Refund not received',{exact:true}).first().click();
-            await page.waitForURL(/#\/claim\//,{timeout:15000}).catch(()=>page.waitForURL(/#\/case\//,{timeout:15000}));
+            await page.waitForURL(/#\/(claim|case)\//,{timeout:15000});
             await page.getByText('Human + agent workspace',{exact:true}).waitFor({timeout:15000});
             await page.getByText('Exportable claim dossier',{exact:true}).waitFor();
             await page.getByRole('button',{name:'Accept offer'}).waitFor();
@@ -70,7 +69,6 @@ jobs:
             report.consumer.consoleErrors=consoleErrors.filter(x=>!x.includes('favicon'));
             await ctx.close();
           }
-          // Merchant: canonical merchant-viewed claim where all merchant resolution actions are valid.
           {
             const {ctx,page,consoleErrors}=await login('merchant');
             await page.getByText('Order not delivered',{exact:true}).first().click();
@@ -94,7 +92,7 @@ jobs:
           console.log(JSON.stringify(report,null,2));
           await browser.close();
           JS
-          node /tmp/webmcp-judge.mjs
+          node .qa-webmcp-judge.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -107,7 +105,7 @@ jobs:
       - name: Remove one-time workflow
         if: success()
         run: |
-          rm -f .github/workflows/zz-native-webmcp-judge.yml
+          rm -f .github/workflows/zz-native-webmcp-judge.yml .qa-webmcp-judge.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A .github/workflows
