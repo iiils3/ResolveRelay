@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: resolverelay-static-production
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
