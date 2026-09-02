@@ -2,7 +2,7 @@
 
 **A WebMCP-native coordination workspace where consumers, merchants, and AI agents work from one structured record while humans retain authority over every consequential action.**
 
-**Live app:** https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/  
+**Live app:** https://iiils3.github.io/ResolveRelay/  
 **WebMCP Challenge guide:** [`HACKATHON.md`](./HACKATHON.md)
 
 ResolveRelay is not an arbitrator, a law firm, or a replacement for merchant support. It turns the messy aftermath of a failed purchase—receipts, product links, support attempts, evidence, merchant replies, refund discussions, and follow-ups—into one durable coordination record. Consumers and merchants work on the same protected case as equal participants, while a WebMCP-capable agent receives explicit structured tools instead of visually guessing what the page means.
@@ -85,7 +85,7 @@ React + TypeScript + Vite
                                   `---- server-side AI adapter -> Groq
 ```
 
-`main` is the production source of truth. `.github/workflows/publish-static.yml` typechecks/builds `main` and regenerates the artifact-only `site` branch published by GitHub Pages.
+`main` is the production source of truth. `.github/workflows/deploy-pages.yml` verifies `main`, uploads the static build as a GitHub Pages artifact, and deploys it through the official Pages action.
 
 The browser never receives the Groq provider key. AI calls require an authenticated Supabase session before the relay forwards them to the server-side adapter. The current challenge adapter uses Groq as its primary provider.
 
@@ -158,10 +158,9 @@ Never commit service-role credentials, database passwords, Groq/OpenAI keys, or 
 ## Repository notes
 
 - `main` — production source of truth.
-- `site` — generated static artifact branch published by GitHub Pages; do not edit manually.
 - `supabase/` — migrations and reconstructable active Edge Function source.
 - `.github/workflows/build.yml` — locked install, typecheck, build, WebMCP/relay presence checks, runtime dependency audit.
-- `.github/workflows/publish-static.yml` — produces and publishes the static `site` artifact.
+- `.github/workflows/deploy-pages.yml` — verifies and deploys the static production build to GitHub Pages.
 
 ResolveRelay and its WebMCP implementation were built during the WebMCP Challenge submission window.
 
@@ -176,4 +175,3 @@ Apache License 2.0. See [`LICENSE`](./LICENSE).
 - **Follow-up clock:** a 72-hour ResolveRelay workflow checkpoint is derived from the latest recorded activity while waiting for a merchant. It is not a legal deadline and never auto-escalates externally.
 - **WebMCP tools:** `get_follow_up_status` and `get_claim_dossier` expose the same structured state to agents. `log_contact_attempt` is registered immediately for consumer claims rather than only after another tool is called.
 - **State-aware controls:** merchant actions, merchant invitations, and evidence upload controls are hidden/limited when the current state does not permit them, reducing dead-end buttons during judge testing.
-

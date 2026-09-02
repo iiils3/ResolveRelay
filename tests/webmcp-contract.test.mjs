@@ -31,6 +31,5 @@ test('removes stale tool registrations with an AbortSignal', () => {
 });
 
 test('documents the working challenge deployment', () => {
-  assert.match(readme, /https:\/\/resolverelay-recovery-gxngvu\.v2\.appdeploy\.ai\//);
-  assert.doesNotMatch(readme, /https:\/\/iiils3\.github\.io\/ResolveRelay\//);
+  assert.match(readme, /https:\/\/iiils3\.github\.io\/ResolveRelay\//);
 });
