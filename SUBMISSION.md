@@ -4,7 +4,7 @@
 
 ## One-line pitch
 
-ResolveRelay turns post-purchase disputes into a shared, permissioned claim workspace where consumers, merchants, and WebMCP agents work from the same structured state while humans retain approval over consequential actions.
+ResolveRelay turns fragmented post-purchase communication into a shared, permissioned coordination workspace where consumers, merchants, and WebMCP agents work from the same structured state while humans retain approval over consequential actions.
 
 ## What it does
 
@@ -90,7 +90,7 @@ ResolveRelay does not present itself as a law firm and does not claim that its d
 
 ## Potential impact
 
-The target audience is anyone who has a legitimate post-purchase problem and the merchant trying to resolve it before the situation turns into a fragmented support thread or payment dispute. The core cost is coordination: collecting the same facts repeatedly, determining what happened, keeping evidence together, knowing who is waiting on whom, and making sure both parties act on the same record.
+The target audience is a consumer with a legitimate post-purchase problem and the merchant trying to resolve it before the situation turns into a fragmented support thread or payment dispute. ResolveRelay is not a third-party adjudicator: it does not decide who is right, guarantee either party's claims, or replace the merchant's support authority. Its job is coordination—collecting facts once, keeping evidence together, showing who is waiting on whom, and giving both parties one shared record on which to act.
 
 ResolveRelay makes that coordination legible to both humans and agents. WebMCP is especially useful because an agent can act on structured state without bypassing the application’s permissions or forcing the user to surrender control over consequential decisions.
 
@@ -102,7 +102,7 @@ The ambition is not to replace either party with AI. It is to make the web workf
 
 ## Live app and source
 
-- Live app: https://iiils3.github.io/ResolveRelay/
+- Live app: https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/
 - Public source: https://github.com/iiils3/ResolveRelay
 - License: Apache-2.0
 
