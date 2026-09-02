@@ -102,7 +102,7 @@ The ambition is not to replace either party with AI. It is to make the web workf
 
 ## Live app and source
 
-- Live app: https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/
+- Live app: https://iiils3.github.io/ResolveRelay/
 - Public source: https://github.com/iiils3/ResolveRelay
 - License: Apache-2.0
 
