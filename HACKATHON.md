@@ -1,6 +1,6 @@
 # ResolveRelay — WebMCP Challenge Judge Guide
 
-**Live app:** https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/  
+**Live app:** https://iiils3.github.io/ResolveRelay/  
 **Source:** https://github.com/iiils3/ResolveRelay
 
 ResolveRelay is a WebMCP-native post-purchase coordination workspace. It does not judge either party or replace merchant support. Consumers, merchants, and agents operate on one structured claim with explicit permissions, evidence, audit history, notifications, a shared state machine, and human approval for consequential actions.
@@ -161,7 +161,7 @@ Stop before 3:00.
 
 The challenge frontend is generated from `main` and published from the artifact-only `site` branch through GitHub Pages:
 
-https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/
+https://iiils3.github.io/ResolveRelay/
 
 The authoritative data/state backend is Supabase. AI requests enter through an authenticated Supabase relay and reach a server-side adapter using Groq as the current primary provider; the browser never receives the provider key.
 
@@ -213,4 +213,3 @@ Temporary QA users/claims and temporary admin registration/self-test endpoints w
 - **Follow-up clock:** a 72-hour ResolveRelay workflow checkpoint is derived from the latest recorded activity while waiting for a merchant. It is not a legal deadline and never auto-escalates externally.
 - **WebMCP tools:** `get_follow_up_status` and `get_claim_dossier` expose the same structured state to agents. `log_contact_attempt` is registered immediately for consumer claims rather than only after another tool is called.
 - **State-aware controls:** merchant actions, merchant invitations, and evidence upload controls are hidden/limited when the current state does not permit them, reducing dead-end buttons during judge testing.
-
