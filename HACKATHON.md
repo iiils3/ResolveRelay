@@ -1,9 +1,9 @@
 # ResolveRelay — WebMCP Challenge Judge Guide
 
-**Live app:** https://iiils3.github.io/ResolveRelay/  
+**Live app:** https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/  
 **Source:** https://github.com/iiils3/ResolveRelay
 
-ResolveRelay is a WebMCP-native post-purchase resolution workspace. Consumers, merchants, and agents operate on one structured claim with explicit permissions, evidence, audit history, notifications, a shared state machine, and human approval for consequential actions.
+ResolveRelay is a WebMCP-native post-purchase coordination workspace. It does not judge either party or replace merchant support. Consumers, merchants, and agents operate on one structured claim with explicit permissions, evidence, audit history, notifications, a shared state machine, and human approval for consequential actions.
 
 ## Zero-friction evaluation access
 
@@ -161,7 +161,7 @@ Stop before 3:00.
 
 The challenge frontend is generated from `main` and published from the artifact-only `site` branch through GitHub Pages:
 
-https://iiils3.github.io/ResolveRelay/
+https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/
 
 The authoritative data/state backend is Supabase. AI requests enter through an authenticated Supabase relay and reach a server-side adapter using Groq as the current primary provider; the browser never receives the provider key.
 
