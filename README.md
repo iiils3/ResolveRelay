@@ -5,6 +5,8 @@
 **Live app:** https://iiils3.github.io/ResolveRelay/  
 **WebMCP Challenge guide:** [`HACKATHON.md`](./HACKATHON.md)
 
+The production frontend is hosted exclusively on GitHub Pages; authenticated backend services run on Supabase.
+
 ResolveRelay is not an arbitrator, a law firm, or a replacement for merchant support. It turns the messy aftermath of a failed purchase—receipts, product links, support attempts, evidence, merchant replies, refund discussions, and follow-ups—into one durable coordination record. Consumers and merchants work on the same protected case as equal participants, while a WebMCP-capable agent receives explicit structured tools instead of visually guessing what the page means.
 
 ## Fast demo access
