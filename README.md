@@ -1,11 +1,11 @@
 # ResolveRelay
 
-**A WebMCP-native post-purchase resolution workspace where consumers, merchants, and AI agents collaborate on one structured claim while humans keep authority over consequential actions.**
+**A WebMCP-native coordination workspace where consumers, merchants, and AI agents work from one structured record while humans retain authority over every consequential action.**
 
-**Live app:** https://iiils3.github.io/ResolveRelay/  
+**Live app:** https://resolverelay-recovery-gxngvu.v2.appdeploy.ai/  
 **WebMCP Challenge guide:** [`HACKATHON.md`](./HACKATHON.md)
 
-ResolveRelay turns the messy aftermath of a failed purchase—receipts, product links, support attempts, evidence, merchant replies, refund discussions, and deadlines—into one durable claim record. Consumers and merchants work on the same protected case, while a WebMCP-capable agent receives explicit structured tools instead of visually guessing what the page means.
+ResolveRelay is not an arbitrator, a law firm, or a replacement for merchant support. It turns the messy aftermath of a failed purchase—receipts, product links, support attempts, evidence, merchant replies, refund discussions, and follow-ups—into one durable coordination record. Consumers and merchants work on the same protected case as equal participants, while a WebMCP-capable agent receives explicit structured tools instead of visually guessing what the page means.
 
 ## Fast demo access
 
@@ -105,9 +105,9 @@ The browser never receives the Groq provider key. AI calls require an authentica
 
 ResolveRelay is not a law firm and does not provide legal advice.
 
-## Validation
+## Verification
 
-Automated and end-to-end checks cover:
+The repository runs automated contract checks for the WebMCP tool surface, confirmation gates, stale-registration cleanup, and the documented live deployment. The challenge build was also manually exercised across:
 
 - arbitrary demo credentials with **different consumer and merchant sessions**;
 - RLS and merchant-membership isolation;
