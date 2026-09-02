@@ -20,6 +20,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Typecheck
         run: npm run typecheck
+      - name: Test WebMCP contract
+        run: npm test
       - name: Build frontend
         run: npm run build
       - name: Validate WebMCP registration exists
